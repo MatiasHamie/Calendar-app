@@ -15,46 +15,56 @@ import moment from "moment";
 // el resto se cambia agregando los calendar-messages y pasandoselos a las props del calendar
 import "moment/locale/es";
 import { CalendarEvent } from "./CalendarEvent";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { uiOpenModal } from "../../redux/actions/ui";
 import { CalendarModal } from "./CalendarModal";
+import {
+  eventClearActiveEvent,
+  eventSetActive,
+} from "../../redux/actions/events";
+import { AddNewFab } from "../ui/AddNewFab";
+import { RootState } from "../../interfaces/useSelectorRootState";
+import { ICalendarEvent } from "../../interfaces/calendarEvent";
+import { DeleteEventFab } from "../ui/DeleteEventFab";
 moment.locale("es");
 
 const localizer = momentLocalizer(moment);
-const events = [
-  {
-    title: "Cumpleaños del jefe",
-    start: moment().toDate(), //sinonimo de un new Date() pero con moment
-    end: moment().add(2, "hours").toDate(), //le agrego 2 horas a la hora actual
-    notes: "Comprar el pastel",
-    user: {
-      _id: "123",
-      name: "Matias",
-    },
-  },
-];
 
 export const CalendarScreen: React.FC = () => {
   const dispatch = useDispatch();
+
+  const events: ICalendarEvent[] = useSelector<RootState, ICalendarEvent[]>(
+    (state: RootState) => state.calendar.events
+  );
+
+  // useSelector<tipo de dato del state que es el de redux dev tools, tipo dato retorno>
+
+  const activeEvent: ICalendarEvent = useSelector<RootState, ICalendarEvent>(
+    (state: RootState) => state.calendar.activeEvent
+  );
 
   const [lastView, setLastView] = useState<View | string>(
     localStorage.getItem("lastView") || "month"
   );
 
   const onDoubleClick = (e: any) => {
-    console.log("abrir modal");
     // NO OLVIDAR QUE ACA NO VA UN PUNTERO A FUNCION, SE INVOCA
     dispatch(uiOpenModal());
   };
 
   const onSelectEvent = (e: any) => {
-    console.log(e);
+    dispatch(eventSetActive(e));
   };
 
   // Cuando cambiamos de pagina (mes, dia, etc.) se mantiene el evento seleccionado
   const onViewChange = (e: any) => {
     setLastView(e);
     localStorage.setItem("lastView", e);
+  };
+
+  // cuando se clickea en otro lugar del calendario q no sea un evento ya guardado, borra el active event
+  const onSelectSlot = (e: any) => {
+    dispatch(eventClearActiveEvent());
   };
 
   // esta funcion le aplica estilo a cada evento en particular
@@ -89,12 +99,17 @@ export const CalendarScreen: React.FC = () => {
         eventPropGetter={eventStyleGetter}
         onDoubleClickEvent={onDoubleClick}
         onSelectEvent={onSelectEvent}
+        onSelectSlot={onSelectSlot}
+        selectable={true} //este tiene q ir de la mano con onSelectSlot
         onView={onViewChange}
         view={lastView as View}
         components={{
           event: CalendarEvent,
         }}
       />
+
+      {activeEvent && <DeleteEventFab />}
+      <AddNewFab />
 
       <CalendarModal />
     </div>

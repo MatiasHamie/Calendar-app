@@ -1,3 +1,8 @@
+html {
+  box-sizing: border-box;
+  font-size: 62.5%;
+}
+
 body {
   height: 100vh;
   width: 100vw;
@@ -59,5 +64,22 @@ body {
   outline: none;
 }
 .react-datetime-picker__wrapper {
-    border: 0px solid gray !important;
+  border: 0px solid gray !important;
+}
+
+/* FABS */
+.fab {
+  border-radius: 100%;
+  bottom: 25px;
+  right: 25px;
+  font-size: 2rem;
+  padding: 25px;
+  position: fixed;
+}
+
+.fab-danger {
+  bottom: 25px;
+  left: 25px;
+  padding: 10px;
+  position: fixed;
 }

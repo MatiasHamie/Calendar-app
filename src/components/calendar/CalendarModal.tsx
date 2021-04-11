@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useState } from "react";
+import React, { ChangeEvent, useEffect, useState } from "react";
 
 import Swal from "sweetalert2";
 
@@ -11,6 +11,12 @@ import moment from "moment";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../interfaces/useSelectorRootState";
 import { uiCloseModal } from "../../redux/actions/ui";
+import {
+  eventAddNew,
+  eventClearActiveEvent,
+  eventUpdated,
+} from "../../redux/actions/events";
+import { ICalendarEvent } from "../../interfaces/calendarEvent";
 
 const customStyles = {
   content: {
@@ -32,6 +38,13 @@ Modal.setAppElement("#root");
 const now = moment().minutes(0).seconds(0).add(1, "hours");
 const then = now.clone().add(1, "hours");
 
+const initialEvent = {
+  title: "",
+  notes: "",
+  start: now.toDate(),
+  end: then.toDate(),
+};
+
 export const CalendarModal: React.FC = () => {
   const [dateStart, setDateStart] = useState(now.toDate());
   const [dateEnd, setDateEnd] = useState(then.toDate());
@@ -44,20 +57,18 @@ export const CalendarModal: React.FC = () => {
     (state: RootState) => state.ui.modalOpen
   );
 
-  const closeModal = () => {
-    // Pendiente: Cerrar el modal
-    console.log("cerrar modal");
-    dispatch(uiCloseModal());
-  };
+  const activeEvent: ICalendarEvent = useSelector<RootState, ICalendarEvent>(
+    (state: RootState) => state.calendar.activeEvent
+  );
 
-  const [formValues, setFormValues] = useState({
-    title: "Evento",
-    notes: "",
-    start: now.toDate(),
-    end: then.toDate(),
-  });
+  const [formValues, setFormValues] = useState(initialEvent);
 
   const { title, notes, start, end } = formValues;
+
+  useEffect(() => {
+    // el else es para cuando borramos un evento, que tambien reinicie el modal
+    activeEvent ? setFormValues(activeEvent) : setFormValues(initialEvent);
+  }, [setFormValues, activeEvent]);
 
   const handleInputChange = ({
     target,
@@ -107,10 +118,29 @@ export const CalendarModal: React.FC = () => {
     }
 
     //Pendiente: realizar grabacion a la base de datos
+    if (activeEvent) {
+      dispatch(eventUpdated(formValues));
+    } else {
+      dispatch(
+        eventAddNew({
+          ...formValues,
+          id: new Date().getTime(),
+          user: {
+            _id: "123",
+            name: "Matias",
+          },
+        })
+      );
+    }
     setisTitleValid(true);
     closeModal();
   };
 
+  const closeModal = () => {
+    dispatch(uiCloseModal());
+    dispatch(eventClearActiveEvent());
+    setFormValues(initialEvent);
+  };
   return (
     <Modal
       isOpen={modalIsOpen as boolean}
@@ -121,7 +151,7 @@ export const CalendarModal: React.FC = () => {
       className="modal"
       overlayClassName="modal-fondo"
     >
-      <h1> Nuevo evento </h1>
+      <h1>{activeEvent ? 'Editar Evento' : 'Nuevo Evento'} </h1>
       <hr />
 
       <form className="container" onSubmit={handleSubmitForm}>
